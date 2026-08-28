@@ -6,7 +6,7 @@ Web4 (agentes de IA com carteira propria, operando sozinhos on-chain) —
 
 Isso **não** é uma réplica da infraestrutura Conway (ERC-8004, x402, etc). É um
 protótipo simplificado com o mesmo espírito: um agente que decide sozinho,
-via um modelo de IA gratuito (Groq), quando checar saldo, pedir
+via um modelo de IA gratuito (NVIDIA ou Groq, configuravel), quando checar saldo, pedir
 fundos e mandar transações — dentro de limites de segurança fixos no código.
 
 ## O que ele faz
@@ -128,8 +128,10 @@ aceita perder por completo, e nunca dê permissão de saque à chave de API.
 
 ## Como rodar
 
-Pré-requisitos: Node 20+, uma chave gratuita do Groq (sem cartão de
-crédito) — gere em https://console.groq.com/keys.
+Pré-requisitos: Node 20+, e uma chave gratuita de um provedor de LLM —
+NVIDIA (padrão, sem cartão de crédito) em
+https://build.nvidia.com/settings/api-keys, ou Groq (alternativa) em
+https://console.groq.com/keys.
 
 ```bash
 npm install
@@ -153,13 +155,23 @@ saldos separados.
 Preencha o resto do `.env` (copie de `.env.example` se ainda não existir):
 
 ```
-GROQ_API_KEY=gsk_...
-GROQ_MODEL=openai/gpt-oss-120b
+LLM_PROVIDER=nvidia
+NVIDIA_API_KEY=nvapi-...
 ```
 
-Para ver a lista de modelos disponíveis no Groq:
+(ou `LLM_PROVIDER=groq` com `GROQ_API_KEY=gsk_...` — só um dos dois precisa
+estar preenchido, o que corresponder ao `LLM_PROVIDER` escolhido.)
+
+O modelo e a base URL têm um padrão por provedor (ver `src/config.ts`), mas
+dá pra sobrescrever com `LLM_MODEL`/`LLM_BASE_URL` no `.env`. Pra ver a
+lista de modelos disponíveis:
 
 ```bash
+# NVIDIA (veja quais suportam "function calling" em https://build.nvidia.com/models)
+curl -s https://integrate.api.nvidia.com/v1/models \
+  -H "Authorization: Bearer $NVIDIA_API_KEY" | python3 -m json.tool | grep '"id"'
+
+# Groq
 curl -s https://api.groq.com/openai/v1/models \
   -H "Authorization: Bearer $GROQ_API_KEY" | python3 -m json.tool | grep '"id"'
 ```

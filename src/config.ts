@@ -15,11 +15,36 @@ function requireEnv(name: string): string {
   return value;
 }
 
+// Provedor de LLM: endpoint compativel com a API da OpenAI, trocavel por
+// env var pra nao depender de um unico free tier (ja migramos NVIDIA ->
+// Groq por 403 misterioso, e Groq -> NVIDIA por cota diaria curta demais
+// pro modo continuo - ver CONTEXT.md).
+type LlmProvider = "nvidia" | "groq";
+
+const LLM_PROVIDER_DEFAULTS: Record<LlmProvider, { baseUrl: string; model: string; apiKeyEnv: string }> = {
+  nvidia: {
+    baseUrl: "https://integrate.api.nvidia.com/v1",
+    model: "meta/llama-3.3-70b-instruct",
+    apiKeyEnv: "NVIDIA_API_KEY",
+  },
+  groq: {
+    baseUrl: "https://api.groq.com/openai/v1",
+    model: "openai/gpt-oss-120b",
+    apiKeyEnv: "GROQ_API_KEY",
+  },
+};
+
+const llmProvider = (process.env.LLM_PROVIDER || "nvidia") as LlmProvider;
+if (!LLM_PROVIDER_DEFAULTS[llmProvider]) {
+  throw new Error(`LLM_PROVIDER invalido: "${llmProvider}". Use "nvidia" ou "groq".`);
+}
+const llmProviderDefaults = LLM_PROVIDER_DEFAULTS[llmProvider];
+
 export const config = {
-  // Groq (console.groq.com) - endpoint compativel com OpenAI,
-  // free tier sem cartao de credito.
-  groqApiKey: requireEnv("GROQ_API_KEY"),
-  groqModel: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
+  llmProvider,
+  llmApiKey: requireEnv(llmProviderDefaults.apiKeyEnv),
+  llmBaseUrl: process.env.LLM_BASE_URL || llmProviderDefaults.baseUrl,
+  llmModel: process.env.LLM_MODEL || llmProviderDefaults.model,
   agentPrivateKey: requireEnv("AGENT_PRIVATE_KEY") as `0x${string}`,
   rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || undefined,
   maxIterations: Number(process.env.MAX_ITERATIONS ?? 15),

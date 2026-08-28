@@ -71,7 +71,12 @@ npm run ledger      # log bruto de tudo (on-chain + ficticio + trading)
 
 ## `.env` atual (o que já está configurado)
 
-- `GROQ_API_KEY` / `GROQ_MODEL=openai/gpt-oss-120b` — funcionando.
+- `LLM_PROVIDER=nvidia` (novo padrão) com `NVIDIA_API_KEY` — precisa ser
+  preenchido/testado na sua máquina; ainda não confirmamos se o 403 antigo
+  do NVIDIA API Catalog não volta a acontecer com a conta atual. Se der
+  problema, é só trocar `LLM_PROVIDER=groq` (já tem `GROQ_API_KEY`
+  funcionando, mas a cota diária free tier se esgota rápido em modo
+  contínuo — ver "Problemas resolvidos").
 - `AGENT_PRIVATE_KEY` — carteira testnet já gerada e com saldo (endereço
   `0x5F503402B8F275e54075a93799a1DBB6766B380f`).
 - `CONTINUOUS_MODE=true`, `CYCLE_DELAY_SECONDS=30`, `MAX_CYCLES=30`.
@@ -120,6 +125,21 @@ não técnica (o código já suporta, só falta trocar as chaves e
 - **Modelos de IA saem de linha nos catálogos gratuitos** (NVIDIA API
   Catalog deu 403 misterioso mesmo com conta normal) — migramos pra
   **Groq**. Modelo atual: `openai/gpt-oss-120b`.
+- **`err.headers?.get(...)` não existe** — no `openai@4.68.4`,
+  `APIError.headers` é objeto simples (`Record<string,string>`), não
+  `Headers` do Fetch API. Isso fazia o retry de rate limit quebrar com
+  `err.headers?.get is not a function` e derrubar o ciclo inteiro a cada
+  429. Corrigido acessando `err.headers?.["retry-after"]` direto.
+- **Cota diária do Groq free tier é curta demais pro modo contínuo** — o
+  crash-loop do bug acima (cada ciclo falhando sem esperar, a cada 30s)
+  esgotou a cota rápido, e o `retry-after` real passou a reportar esperas
+  de minutos (ex: 1342s) — sinal de limite diário, não só por minuto.
+  Voltamos a suportar **NVIDIA** como opção (agora configurável via
+  `LLM_PROVIDER=nvidia|groq` em `src/config.ts`, com `NVIDIA_API_KEY` /
+  `GROQ_API_KEY` conforme o provedor escolhido) e trocamos o padrão pra
+  NVIDIA. Se o 403 misterioso do NVIDIA API Catalog voltar a acontecer, é
+  só trocar `LLM_PROVIDER=groq` no `.env` — o código já suporta os dois
+  lado a lado, sem precisar mexer em nada além do `.env`.
 - **gpt-oss vaza tokens de formatação Harmony** no nome de tool calls
   (ex: `check_balance<|channel|>commentary`) — corrigido sanitizando o
   nome da ferramenta em `src/agent.ts` antes de despachar.

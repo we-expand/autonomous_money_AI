@@ -61,24 +61,25 @@ fazer sozinho versus o que depende de um humano, e sobre o fato de que o
 saldo ficticio NAO prova capacidade de ganhar dinheiro real.
 `.trim();
 
-// Groq expoe um endpoint compativel com a API da OpenAI.
+// Provedor de LLM configuravel (NVIDIA por padrao, Groq como alternativa -
+// ver LLM_PROVIDER no .env). Ambos expoe um endpoint compativel com a API
+// da OpenAI.
 const client = new OpenAI({
-  apiKey: config.groqApiKey,
-  baseURL: "https://api.groq.com/openai/v1",
+  apiKey: config.llmApiKey,
+  baseURL: config.llmBaseUrl,
 });
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// O free tier do Groq tem um limite baixo de tokens por minuto (TPM). Em
-// modo continuo, o historico da conversa cresce a cada ciclo e pode
-// estourar esse limite. Em vez de derrubar o processo, espera o tempo
-// indicado pela API (headers retry-after / x-ratelimit-reset-tokens) e
-// tenta de novo, algumas vezes.
-// Groq manda o tempo de espera em "retry-after" (segundos) ou, quando esse
-// header nao vem, em "x-ratelimit-reset-tokens"/"x-ratelimit-reset-requests"
-// no formato "7.66s" ou "1m2.5s". Tenta os tres, nessa ordem.
+// Free tiers de LLM tendem a ter um limite baixo de tokens por minuto (e
+// as vezes por dia). Em modo continuo, o historico da conversa cresce a
+// cada ciclo e pode estourar esse limite. Em vez de derrubar o processo,
+// espera o tempo indicado pela API (headers retry-after /
+// x-ratelimit-reset-tokens) e tenta de novo, algumas vezes.
+// O formato do header de reset (quando "retry-after" nao vem) costuma ser
+// "7.66s" ou "1m2.5s".
 function parseWaitSeconds(headers: Record<string, string | null | undefined> | undefined): number {
   const retryAfter = headers?.["retry-after"];
   if (retryAfter) return Number(retryAfter);
@@ -117,12 +118,12 @@ async function createChatCompletionWithRetry(
       const waitSeconds = Math.min(Math.ceil(reportedWait + 2), 3600);
       if (reportedWait > 90) {
         console.log(
-          `  (rate limit do Groq bem maior que o normal de tokens/minuto - ` +
-            `provavelmente a cota diaria do free tier. Confira em console.groq.com/settings/limits)`
+          `  (rate limit do ${config.llmProvider} bem maior que o normal de tokens/minuto - ` +
+            `provavelmente uma cota diaria do free tier. Confira o painel do provedor.)`
         );
       }
       console.log(
-        `  (rate limit do Groq, tentativa ${attempt}/${maxAttempts} - aguardando ${waitSeconds}s antes de tentar de novo)`
+        `  (rate limit do ${config.llmProvider}, tentativa ${attempt}/${maxAttempts} - aguardando ${waitSeconds}s antes de tentar de novo)`
       );
       await sleep(waitSeconds * 1000);
     }
@@ -171,7 +172,7 @@ export async function runAgent(cycle: number): Promise<boolean> {
     if (iteration > 1) await sleep(3000);
 
     const response = await createChatCompletionWithRetry({
-      model: config.groqModel,
+      model: config.llmModel,
       max_tokens: 1024,
       tools: toolDefinitions,
       tool_choice: "auto",
