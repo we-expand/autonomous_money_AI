@@ -87,7 +87,7 @@ async function createChatCompletionWithRetry(
       const isRateLimit = err instanceof APIError && err.status === 429;
       if (!isRateLimit || attempt === maxAttempts) throw err;
 
-      const retryAfterHeader = err.headers?.get("retry-after");
+      const retryAfterHeader = err.headers?.["retry-after"];
       const waitSeconds = retryAfterHeader ? Number(retryAfterHeader) : 10;
       console.log(
         `  (rate limit do Groq, tentativa ${attempt}/${maxAttempts} - aguardando ${waitSeconds}s antes de tentar de novo)`
