@@ -1,5 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
-import type { MessageParam } from "@anthropic-ai/sdk/resources/messages";
+import OpenAI from "openai";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { config } from "./config.js";
 import { toolDefinitions, executeTool } from "./tools.js";
 import { appendLedger } from "./ledger.js";
@@ -28,74 +28,84 @@ que voce realmente consegue fazer sozinho versus o que depende de um
 humano.
 `.trim();
 
-const client = new Anthropic({ apiKey: config.anthropicApiKey });
+// NVIDIA API Catalog expoe um endpoint compativel com a API da OpenAI.
+const client = new OpenAI({
+  apiKey: config.nvidiaApiKey,
+  baseURL: "https://integrate.api.nvidia.com/v1",
+});
 
 export async function runAgent() {
-  const messages: MessageParam[] = [
+  const messages: ChatCompletionMessageParam[] = [
+    { role: "system", content: GENESIS_PROMPT },
     { role: "user", content: `Endereco da sua carteira: ${account.address}\n\nComece.` },
   ];
 
   for (let iteration = 1; iteration <= config.maxIterations; iteration++) {
-    const response = await client.messages.create({
-      model: "claude-sonnet-4-5",
+    const response = await client.chat.completions.create({
+      model: config.nvidiaModel,
       max_tokens: 1024,
-      system: GENESIS_PROMPT,
       tools: toolDefinitions,
+      tool_choice: "auto",
       messages,
     });
 
-    messages.push({ role: "assistant", content: response.content });
+    const message = response.choices[0].message;
+    messages.push(message);
 
-    const toolUses = response.content.filter((b) => b.type === "tool_use");
-
-    for (const block of response.content) {
-      if (block.type === "text" && block.text.trim()) {
-        console.log(`\n[iteracao ${iteration}] Claude: ${block.text.trim()}`);
-      }
+    if (message.content && message.content.trim()) {
+      console.log(`\n[iteracao ${iteration}] Modelo: ${message.content.trim()}`);
     }
 
-    if (toolUses.length === 0) {
-      // Sem tool_use e sem stop explicito: encerra por seguranca em vez de
+    const toolCalls = message.tool_calls ?? [];
+
+    if (toolCalls.length === 0) {
+      // Sem tool_call e sem stop explicito: encerra por seguranca em vez de
       // ficar girando sem acao.
       console.log("Nenhuma ferramenta chamada. Encerrando o loop.");
       break;
     }
 
-    const toolResults = [];
     let shouldStop = false;
 
-    for (const use of toolUses) {
-      console.log(`  -> chamando ferramenta: ${use.name}(${JSON.stringify(use.input)})`);
-      const result = await executeTool(use.name, use.input as Record<string, unknown>);
+    for (const call of toolCalls) {
+      if (call.type !== "function") continue;
+      const name = call.function.name;
+      let input: Record<string, unknown> = {};
+      try {
+        input = JSON.parse(call.function.arguments || "{}");
+      } catch {
+        input = {};
+      }
+
+      console.log(`  -> chamando ferramenta: ${name}(${JSON.stringify(input)})`);
+      const result = await executeTool(name, input);
       console.log(`     resultado: ${JSON.stringify(result)}`);
 
       appendLedger({
         timestamp: new Date().toISOString(),
         iteration,
         type:
-          use.name === "check_balance"
+          name === "check_balance"
             ? "balance_check"
-            : use.name === "request_faucet_info"
+            : name === "request_faucet_info"
               ? "faucet_request"
-              : use.name === "send_test_transaction"
+              : name === "send_test_transaction"
                 ? "transaction"
-                : use.name === "stop"
+                : name === "stop"
                   ? "stop"
                   : "thought",
-        detail: JSON.stringify({ input: use.input, result }),
+        detail: JSON.stringify({ input, result }),
         txHash: (result as { tx_hash?: string }).tx_hash,
       });
 
-      toolResults.push({
-        type: "tool_result" as const,
-        tool_use_id: use.id,
+      messages.push({
+        role: "tool",
+        tool_call_id: call.id,
         content: JSON.stringify(result),
       });
 
-      if (use.name === "stop") shouldStop = true;
+      if (name === "stop") shouldStop = true;
     }
-
-    messages.push({ role: "user", content: toolResults });
 
     if (shouldStop) {
       console.log("\nAgente decidiu parar.");

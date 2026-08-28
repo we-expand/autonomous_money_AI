@@ -1,66 +1,82 @@
 import { parseEther } from "viem";
-import type { Tool } from "@anthropic-ai/sdk/resources/messages";
+import type { OpenAI } from "openai";
 import { account, publicClient, walletClient, getBalanceEth } from "./wallet.js";
 import { config } from "./config.js";
 
-export const toolDefinitions: Tool[] = [
+export const toolDefinitions: OpenAI.Chat.ChatCompletionTool[] = [
   {
-    name: "check_balance",
-    description: "Consulta o saldo atual (em ETH de testnet, Base Sepolia) da carteira do agente.",
-    input_schema: { type: "object", properties: {} },
-  },
-  {
-    name: "request_faucet_info",
-    description:
-      "Retorna instrucoes de como conseguir ETH de testnet gratuito (faucet). " +
-      "O agente NAO consegue chamar o faucet sozinho (a maioria exige captcha/login humano) " +
-      "— isso e proposital, e o ponto central do experimento: a 'autonomia economica' tem limites reais.",
-    input_schema: { type: "object", properties: {} },
-  },
-  {
-    name: "send_test_transaction",
-    description:
-      "Envia uma transacao de valor minimo (ETH de testnet) para um endereco. " +
-      "Use para simular 'pagamentos' do agente. Valor maximo por chamada e limitado por seguranca.",
-    input_schema: {
-      type: "object",
-      properties: {
-        to_address: {
-          type: "string",
-          description: "Endereco 0x de destino. Se omitido, envia para a propria carteira do agente (self-transfer, so para gerar uma tx de teste).",
-        },
-        amount_eth: {
-          type: "string",
-          description: `Quantidade em ETH de testnet, como string decimal (ex: "0.0001"). Teto absoluto: ${config.maxTxValueEth} ETH.`,
-        },
-        memo: {
-          type: "string",
-          description: "Motivo/contexto da transacao, para o log.",
-        },
-      },
-      required: ["amount_eth", "memo"],
+    type: "function",
+    function: {
+      name: "check_balance",
+      description: "Consulta o saldo atual (em ETH de testnet, Base Sepolia) da carteira do agente.",
+      parameters: { type: "object", properties: {} },
     },
   },
   {
-    name: "log_thought",
-    description: "Registra um raciocinio/observacao do agente no ledger, sem executar nenhuma acao externa.",
-    input_schema: {
-      type: "object",
-      properties: {
-        thought: { type: "string", description: "O que o agente esta pensando/concluindo." },
-      },
-      required: ["thought"],
+    type: "function",
+    function: {
+      name: "request_faucet_info",
+      description:
+        "Retorna instrucoes de como conseguir ETH de testnet gratuito (faucet). " +
+        "O agente NAO consegue chamar o faucet sozinho (a maioria exige captcha/login humano) " +
+        "— isso e proposital, e o ponto central do experimento: a 'autonomia economica' tem limites reais.",
+      parameters: { type: "object", properties: {} },
     },
   },
   {
-    name: "stop",
-    description: "Encerra o loop do agente quando ele julgar que a tarefa acabou ou nao ha mais o que fazer com segurança.",
-    input_schema: {
-      type: "object",
-      properties: {
-        reason: { type: "string", description: "Por que o agente decidiu parar." },
+    type: "function",
+    function: {
+      name: "send_test_transaction",
+      description:
+        "Envia uma transacao de valor minimo (ETH de testnet) para um endereco. " +
+        "Use para simular 'pagamentos' do agente. Valor maximo por chamada e limitado por seguranca.",
+      parameters: {
+        type: "object",
+        properties: {
+          to_address: {
+            type: "string",
+            description:
+              "Endereco 0x de destino. Se omitido, envia para a propria carteira do agente (self-transfer, so para gerar uma tx de teste).",
+          },
+          amount_eth: {
+            type: "string",
+            description: `Quantidade em ETH de testnet, como string decimal (ex: "0.0001"). Teto absoluto: ${config.maxTxValueEth} ETH.`,
+          },
+          memo: {
+            type: "string",
+            description: "Motivo/contexto da transacao, para o log.",
+          },
+        },
+        required: ["amount_eth", "memo"],
       },
-      required: ["reason"],
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "log_thought",
+      description: "Registra um raciocinio/observacao do agente no ledger, sem executar nenhuma acao externa.",
+      parameters: {
+        type: "object",
+        properties: {
+          thought: { type: "string", description: "O que o agente esta pensando/concluindo." },
+        },
+        required: ["thought"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "stop",
+      description: "Encerra o loop do agente quando ele julgar que a tarefa acabou ou nao ha mais o que fazer com segurança.",
+      parameters: {
+        type: "object",
+        properties: {
+          reason: { type: "string", description: "Por que o agente decidiu parar." },
+        },
+        required: ["reason"],
+      },
     },
   },
 ];

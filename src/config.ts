@@ -16,7 +16,10 @@ function requireEnv(name: string): string {
 }
 
 export const config = {
-  anthropicApiKey: requireEnv("ANTHROPIC_API_KEY"),
+  // NVIDIA API Catalog (build.nvidia.com) - endpoint compativel com OpenAI,
+  // free tier sem cartao de credito.
+  nvidiaApiKey: requireEnv("NVIDIA_API_KEY"),
+  nvidiaModel: process.env.NVIDIA_MODEL || "meta/llama-3.1-70b-instruct",
   agentPrivateKey: requireEnv("AGENT_PRIVATE_KEY") as `0x${string}`,
   rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || undefined,
   maxIterations: Number(process.env.MAX_ITERATIONS ?? 15),

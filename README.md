@@ -6,8 +6,8 @@ Web4 (agentes de IA com carteira propria, operando sozinhos on-chain) —
 
 Isso **não** é uma réplica da infraestrutura Conway (ERC-8004, x402, etc). É um
 protótipo simplificado com o mesmo espírito: um agente que decide sozinho,
-via Claude, quando checar saldo, pedir fundos e mandar transações — dentro de
-limites de segurança fixos no código.
+via um modelo de IA gratuito (NVIDIA API Catalog), quando checar saldo, pedir
+fundos e mandar transações — dentro de limites de segurança fixos no código.
 
 ## O que ele faz
 
@@ -40,7 +40,8 @@ transações (visíveis no [Base Sepolia explorer](https://sepolia.basescan.org)
 
 ## Como rodar
 
-Pré-requisitos: Node 20+, uma chave de API da Anthropic.
+Pré-requisitos: Node 20+, uma chave gratuita da NVIDIA API Catalog (sem
+cartão de crédito) — gere em https://build.nvidia.com/settings/api-keys.
 
 ```bash
 npm install
@@ -56,7 +57,8 @@ Depois, pegue ETH de testnet grátis num faucet para o endereço impresso pelo
 Preencha o resto do `.env` (copie de `.env.example` se ainda não existir):
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...
+NVIDIA_API_KEY=nvapi-...
+NVIDIA_MODEL=meta/llama-3.1-70b-instruct
 ```
 
 E rode:
