@@ -36,17 +36,22 @@ async function publicRequest(path: string, params: Record<string, string>) {
   return body;
 }
 
-// Retorna o saldo livre de USDT (proxy de "caixa em dolar") e os principais
-// ativos com saldo > 0, pra nao expor a lista inteira de ~300 moedas.
+// A conta testnet da Binance vem pre-carregada com centenas de ativos
+// ficticios. Retornamos so o saldo em USDT (proxy de "caixa em dolar") e os
+// ativos que o agente realmente pode operar (ver TRADABLE_ASSETS em
+// tools.ts) - isso evita estourar o limite de tokens do modelo com uma
+// lista gigante e irrelevante.
+const RELEVANT_ASSETS = ["USDT", "BTC", "ETH", "BNB"];
+
 export async function getAccount() {
   const account = await signedRequest("/api/v3/account", "GET", {});
   const balances = (account.balances as Array<{ asset: string; free: string; locked: string }>) ?? [];
-  const nonZero = balances.filter((b) => Number(b.free) > 0 || Number(b.locked) > 0);
-  const usdt = nonZero.find((b) => b.asset === "USDT");
+  const relevant = balances.filter((b) => RELEVANT_ASSETS.includes(b.asset));
+  const usdt = relevant.find((b) => b.asset === "USDT");
 
   return {
     cash_usd: usdt ? Number(usdt.free) : 0,
-    balances: nonZero.map((b) => ({ asset: b.asset, free: Number(b.free), locked: Number(b.locked) })),
+    balances: relevant.map((b) => ({ asset: b.asset, free: Number(b.free), locked: Number(b.locked) })),
     mode: config.binanceTestnet ? "TESTNET (dinheiro simulado)" : "LIVE (dinheiro real)",
   };
 }

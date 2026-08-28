@@ -177,7 +177,7 @@ const tradingToolDefinitions: OpenAI.Chat.ChatCompletionTool[] = [
       name: "check_brokerage_account",
       description:
         `Consulta o saldo REAL da conta na Binance (modo ${config.binanceTestnet ? "TESTNET - dinheiro simulado" : "LIVE - DINHEIRO REAL"}). ` +
-        "Mostra saldo livre em USDT e outros ativos com saldo > 0.",
+        "Mostra saldo livre em USDT (proxy de caixa em dolar) e nos ativos operaveis (BTC, ETH, BNB).",
       parameters: { type: "object", properties: {} },
     },
   },
