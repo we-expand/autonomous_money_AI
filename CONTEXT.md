@@ -167,11 +167,21 @@ não técnica (o código já suporta, só falta trocar as chaves e
   do header `retry-after` e tenta de novo até 5x) e com o modo contínuo
   agora capturando erro por ciclo em vez de morrer inteiro.
 
+## Como retomar numa sessão futura
+
+Basta abrir uma conversa nova e pedir: **"Lê o CONTEXT.md do
+autonomous_money_ai e continua de onde paramos"**. Este arquivo tem tudo
+que a sessão precisa pra não re-perguntar do zero.
+
+Ponto exato onde paramos: modo contínuo rodando local
+(`~/Projects/we-expand/autonomous_money`, `npm start`) via NVIDIA
+(`openai/gpt-oss-120b`), sem erros, saldo fictício reportado em **$17
+USD**. Se ainda estiver rodando quando a próxima sessão começar, é só
+deixar continuar; se tiver parado, `npm start` de novo retoma daí.
+
 ## Próximos passos sugeridos
 
-1. Conferir o resultado da rodada em modo contínuo que ficou pendente
-   (`npm start` depois do `git pull` com a correção de rate limit).
-2. Deixar rodar mais ciclos e observar se o saldo fictício e o saldo da
+1. Deixar rodar mais ciclos e observar se o saldo fictício e o saldo da
    Binance testnet convergem pra uma tendência, ou se é só ruído.
 3. Quando estiver confortável com o comportamento: migrar pra Binance
    **live** — gerar chave real **sem permissão de saque**, depositar os
