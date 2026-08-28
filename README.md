@@ -6,7 +6,7 @@ Web4 (agentes de IA com carteira propria, operando sozinhos on-chain) —
 
 Isso **não** é uma réplica da infraestrutura Conway (ERC-8004, x402, etc). É um
 protótipo simplificado com o mesmo espírito: um agente que decide sozinho,
-via um modelo de IA gratuito (NVIDIA API Catalog), quando checar saldo, pedir
+via um modelo de IA gratuito (Groq), quando checar saldo, pedir
 fundos e mandar transações — dentro de limites de segurança fixos no código.
 
 ## O que ele faz
@@ -40,33 +40,40 @@ transações (visíveis no [Base Sepolia explorer](https://sepolia.basescan.org)
 
 ## Como rodar
 
-Pré-requisitos: Node 20+, uma chave gratuita da NVIDIA API Catalog (sem
-cartão de crédito) — gere em https://build.nvidia.com/settings/api-keys.
+Pré-requisitos: Node 20+, uma chave gratuita do Groq (sem cartão de
+crédito) — gere em https://console.groq.com/keys.
 
 ```bash
 npm install
 npm run setup-wallet     # gera uma carteira nova de TESTNET e salva a chave em .env
 ```
 
-Depois, pegue ETH de testnet grátis num faucet para o endereço impresso pelo
-`setup-wallet` (não vale dinheiro real):
+Depois, pegue ETH de testnet grátis pra rede **Base Sepolia** (não vale
+dinheiro real) num destes faucets — teste mais de um se algum estiver fora
+do ar ou pedir pré-requisitos extras (LINK em mainnet, plano pago, etc):
 
+- https://portal.cdp.coinbase.com/products/faucet (Coinbase Developer
+  Platform — recomendado, até 0.1 ETH/dia, sem pré-requisitos)
+- https://cloud.google.com/application/web3/faucet/base/sepolia
 - https://www.alchemy.com/faucets/base-sepolia
 - https://faucet.quicknode.com/base/sepolia
+
+⚠️ Confirme sempre que o faucet está entregando na rede **Base Sepolia**
+(chain ID `84532`), não em "Ethereum Sepolia" — são redes diferentes com
+saldos separados.
 
 Preencha o resto do `.env` (copie de `.env.example` se ainda não existir):
 
 ```
-NVIDIA_API_KEY=nvapi-...
-NVIDIA_MODEL=openai/gpt-oss-120b
+GROQ_API_KEY=gsk_...
+GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
-O catálogo de modelos da NVIDIA muda com frequência (modelos saem de linha e
-retornam erro 410). Para ver a lista atual:
+Para ver a lista de modelos disponíveis no Groq:
 
 ```bash
-curl -s https://integrate.api.nvidia.com/v1/models \
-  -H "Authorization: Bearer $NVIDIA_API_KEY" | python3 -m json.tool | grep '"id"'
+curl -s https://api.groq.com/openai/v1/models \
+  -H "Authorization: Bearer $GROQ_API_KEY" | python3 -m json.tool | grep '"id"'
 ```
 
 E rode:

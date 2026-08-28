@@ -16,10 +16,10 @@ function requireEnv(name: string): string {
 }
 
 export const config = {
-  // NVIDIA API Catalog (build.nvidia.com) - endpoint compativel com OpenAI,
+  // Groq (console.groq.com) - endpoint compativel com OpenAI,
   // free tier sem cartao de credito.
-  nvidiaApiKey: requireEnv("NVIDIA_API_KEY"),
-  nvidiaModel: process.env.NVIDIA_MODEL || "openai/gpt-oss-120b",
+  groqApiKey: requireEnv("GROQ_API_KEY"),
+  groqModel: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
   agentPrivateKey: requireEnv("AGENT_PRIVATE_KEY") as `0x${string}`,
   rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || undefined,
   maxIterations: Number(process.env.MAX_ITERATIONS ?? 15),

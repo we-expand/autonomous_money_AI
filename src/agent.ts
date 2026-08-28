@@ -28,10 +28,10 @@ que voce realmente consegue fazer sozinho versus o que depende de um
 humano.
 `.trim();
 
-// NVIDIA API Catalog expoe um endpoint compativel com a API da OpenAI.
+// Groq expoe um endpoint compativel com a API da OpenAI.
 const client = new OpenAI({
-  apiKey: config.nvidiaApiKey,
-  baseURL: "https://integrate.api.nvidia.com/v1",
+  apiKey: config.groqApiKey,
+  baseURL: "https://api.groq.com/openai/v1",
 });
 
 export async function runAgent() {
@@ -42,7 +42,7 @@ export async function runAgent() {
 
   for (let iteration = 1; iteration <= config.maxIterations; iteration++) {
     const response = await client.chat.completions.create({
-      model: config.nvidiaModel,
+      model: config.groqModel,
       max_tokens: 1024,
       tools: toolDefinitions,
       tool_choice: "auto",
