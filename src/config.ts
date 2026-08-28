@@ -19,7 +19,7 @@ export const config = {
   // Groq (console.groq.com) - endpoint compativel com OpenAI,
   // free tier sem cartao de credito.
   groqApiKey: requireEnv("GROQ_API_KEY"),
-  groqModel: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+  groqModel: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
   agentPrivateKey: requireEnv("AGENT_PRIVATE_KEY") as `0x${string}`,
   rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || undefined,
   maxIterations: Number(process.env.MAX_ITERATIONS ?? 15),
