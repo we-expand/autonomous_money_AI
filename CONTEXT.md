@@ -140,6 +140,12 @@ não técnica (o código já suporta, só falta trocar as chaves e
   NVIDIA. Se o 403 misterioso do NVIDIA API Catalog voltar a acontecer, é
   só trocar `LLM_PROVIDER=groq` no `.env` — o código já suporta os dois
   lado a lado, sem precisar mexer em nada além do `.env`.
+- **`meta/llama-3.3-70b-instruct` não existe no catálogo da NVIDIA** (deu
+  `410 status code`, confirmado via `GET /v1/models` na chave real) — o
+  catálogo deles muda modelo com frequência, então sempre confira a lista
+  atual antes de fixar um nome. Trocamos o padrão do provedor `nvidia` pra
+  `openai/gpt-oss-120b`, que também está disponível lá e já reusa a
+  sanitização de tokens Harmony que já existia pro Groq.
 - **gpt-oss vaza tokens de formatação Harmony** no nome de tool calls
   (ex: `check_balance<|channel|>commentary`) — corrigido sanitizando o
   nome da ferramenta em `src/agent.ts` antes de despachar.

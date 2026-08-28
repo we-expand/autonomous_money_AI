@@ -24,7 +24,11 @@ type LlmProvider = "nvidia" | "groq";
 const LLM_PROVIDER_DEFAULTS: Record<LlmProvider, { baseUrl: string; model: string; apiKeyEnv: string }> = {
   nvidia: {
     baseUrl: "https://integrate.api.nvidia.com/v1",
-    model: "meta/llama-3.3-70b-instruct",
+    // Mesmo modelo usado no Groq - o NVIDIA API Catalog tambem hospeda
+    // openai/gpt-oss-120b, e o codigo ja sanitiza o vazamento de tokens
+    // Harmony dele (ver agent.ts). "meta/llama-3.3-70b-instruct" nao
+    // existe mais no catalogo (confirmado via GET /v1/models -> 410).
+    model: "openai/gpt-oss-120b",
     apiKeyEnv: "NVIDIA_API_KEY",
   },
   groq: {
