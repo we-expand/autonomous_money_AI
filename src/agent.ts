@@ -76,9 +76,29 @@ function sleep(ms: number) {
 // estourar esse limite. Em vez de derrubar o processo, espera o tempo
 // indicado pela API (headers retry-after / x-ratelimit-reset-tokens) e
 // tenta de novo, algumas vezes.
+// Groq manda o tempo de espera em "retry-after" (segundos) ou, quando esse
+// header nao vem, em "x-ratelimit-reset-tokens"/"x-ratelimit-reset-requests"
+// no formato "7.66s" ou "1m2.5s". Tenta os tres, nessa ordem.
+function parseWaitSeconds(headers: Record<string, string | null | undefined> | undefined): number {
+  const retryAfter = headers?.["retry-after"];
+  if (retryAfter) return Number(retryAfter);
+
+  const resetHeader = headers?.["x-ratelimit-reset-tokens"] ?? headers?.["x-ratelimit-reset-requests"];
+  if (resetHeader) {
+    const match = resetHeader.match(/(?:(\d+)m)?(\d+(?:\.\d+)?)s/);
+    if (match) {
+      const minutes = match[1] ? Number(match[1]) : 0;
+      const seconds = Number(match[2]);
+      return minutes * 60 + seconds;
+    }
+  }
+
+  return 20;
+}
+
 async function createChatCompletionWithRetry(
   params: ChatCompletionCreateParamsNonStreaming,
-  maxAttempts = 5
+  maxAttempts = 8
 ): Promise<ChatCompletion> {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -87,8 +107,20 @@ async function createChatCompletionWithRetry(
       const isRateLimit = err instanceof APIError && err.status === 429;
       if (!isRateLimit || attempt === maxAttempts) throw err;
 
-      const retryAfterHeader = err.headers?.["retry-after"];
-      const waitSeconds = retryAfterHeader ? Number(retryAfterHeader) : 10;
+      // Um pouco de folga sobre o tempo indicado pra evitar bater no limite
+      // de novo por um triz. O teto e so uma trava de sanidade (1h) - o
+      // Groq as vezes reporta esperas longas (minutos) quando o limite
+      // estourado nao e o de tokens/minuto, e sim um limite maior
+      // (tokens/dia do free tier), e nesse caso esperar menos que o
+      // indicado so gera outro 429 na sequencia.
+      const reportedWait = parseWaitSeconds(err.headers);
+      const waitSeconds = Math.min(Math.ceil(reportedWait + 2), 3600);
+      if (reportedWait > 90) {
+        console.log(
+          `  (rate limit do Groq bem maior que o normal de tokens/minuto - ` +
+            `provavelmente a cota diaria do free tier. Confira em console.groq.com/settings/limits)`
+        );
+      }
       console.log(
         `  (rate limit do Groq, tentativa ${attempt}/${maxAttempts} - aguardando ${waitSeconds}s antes de tentar de novo)`
       );
@@ -133,6 +165,11 @@ export async function runAgent(cycle: number): Promise<boolean> {
   let calledStop = false;
 
   for (let iteration = 1; iteration <= config.maxIterations; iteration++) {
+    // Espaca as chamadas dentro do ciclo pra nao estourar de cara o TPM
+    // baixo do free tier do Groq (o historico + as tools crescem a cada
+    // iteracao e cada request sozinha ja custa uma fatia relevante do limite).
+    if (iteration > 1) await sleep(3000);
+
     const response = await createChatCompletionWithRetry({
       model: config.groqModel,
       max_tokens: 1024,
