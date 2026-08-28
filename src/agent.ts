@@ -134,7 +134,15 @@ export async function runAgent(cycle: number): Promise<boolean> {
       }
 
       console.log(`  -> chamando ferramenta: ${name}(${JSON.stringify(input)})`);
-      const result = await executeTool(name, input, cycle);
+      let result: unknown;
+      try {
+        result = await executeTool(name, input, cycle);
+      } catch (err) {
+        // Uma falha numa ferramenta (ex: API externa fora do ar, chave
+        // invalida) nao deve derrubar o processo inteiro - o agente deve
+        // poder ver o erro e decidir o que fazer a seguir.
+        result = { error: err instanceof Error ? err.message : String(err) };
+      }
       console.log(`     resultado: ${JSON.stringify(result)}`);
 
       appendLedger({
