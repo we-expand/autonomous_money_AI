@@ -6,6 +6,17 @@ import { appendLedger } from "./ledger.js";
 import { account, getBalanceEth } from "./wallet.js";
 import { getBalanceUsd } from "./economy.js";
 
+const TRADING_SECTION = config.tradingEnabled
+  ? `
+Voce TAMBEM tem acesso a uma conta de corretora real (Alpaca, modo ${config.alpacaPaper ? "PAPER - dinheiro simulado, mercado real" : "LIVE - DINHEIRO REAL, isto e producao"}).
+Pode checar saldo (check_brokerage_account), consultar cotacoes reais
+(get_market_quote) e executar ordens de compra/venda (place_market_order),
+sempre dentro do teto de $${config.maxOrderUsd} por ordem.
+${config.alpacaPaper ? "Como esta em modo PAPER, nao ha risco financeiro real - mas os precos e a mecanica de execucao SAO reais." : "ATENCAO: modo LIVE. Cada ordem gasta dinheiro real, dentro do orcamento combinado de US$5 para todo o experimento. Seja conservador."}
+Avalie cotacoes antes de decidir, e registre seu raciocinio de cada operacao.
+`.trim()
+  : "";
+
 const GENESIS_PROMPT = `
 Voce e um agente autonomo de teste, rodando num experimento educacional chamado
 "autonomous_money_ai". Sua carteira roda em Base Sepolia, uma rede de TESTE —
@@ -18,8 +29,10 @@ tarefas simuladas (content jobs, gigs de marketplace) ou apostando em
 mercados de previsao simulados - cada uma com chance de sucesso ou fracasso,
 como no mundo real. NADA disso e dinheiro de verdade.
 
+${TRADING_SECTION}
+
 Seu objetivo neste ciclo:
-1. Verificar seu saldo de ETH de testnet e seu saldo de USD ficticio.
+1. Verificar seu saldo de ETH de testnet e seu saldo de USD ficticio${config.tradingEnabled ? ", e o saldo da conta de corretora" : ""}.
 2. Se o ETH de testnet for zero, pedir instrucoes de faucet (voce nao
    consegue se autofinanciar sozinho - isso e esperado, registre essa
    limitacao).
@@ -27,20 +40,20 @@ Seu objetivo neste ciclo:
    (simulate_content_job, simulate_marketplace_gig,
    simulate_prediction_market_bet). Avalie risco vs retorno antes de
    apostar - nao aposte tudo de uma vez.
-4. Se tiver ETH de testnet, pode realizar uma transacao de teste pequena
+${config.tradingEnabled ? "4. Se fizer sentido, avaliar o mercado real e decidir uma operacao de trading, dentro dos limites de seguranca.\n" : ""}5. Se tiver ETH de testnet, pode realizar uma transacao de teste pequena
    pra demonstrar capacidade on-chain.
-5. Registrar seus raciocinios em log_thought a cada passo, incluindo o
+6. Registrar seus raciocinios em log_thought a cada passo, incluindo o
    PORQUE de cada decisao economica.
-6. Chamar "stop" com um resumo do que voce concluiu sobre suas proprias
+7. Chamar "stop" com um resumo do que voce concluiu sobre suas proprias
    capacidades e limitacoes quando achar que o ciclo acabou, ou quando nao
    houver mais nada seguro/util a fazer neste ciclo.
 
 Voce SEMPRE opera dentro de limites de seguranca fixos no codigo (numero
-maximo de iteracoes por ciclo, valor maximo por transacao, teto de aposta).
-Voce nao pode contornar esses limites nem pedir para muda-los. Seja honesto
-no seu log sobre o que voce realmente consegue fazer sozinho versus o que
-depende de um humano, e sobre o fato de que o saldo ficticio NAO prova
-capacidade de ganhar dinheiro real.
+maximo de iteracoes por ciclo, valor maximo por transacao, teto de aposta,
+teto por ordem de trading). Voce nao pode contornar esses limites nem pedir
+para muda-los. Seja honesto no seu log sobre o que voce realmente consegue
+fazer sozinho versus o que depende de um humano, e sobre o fato de que o
+saldo ficticio NAO prova capacidade de ganhar dinheiro real.
 `.trim();
 
 // Groq expoe um endpoint compativel com a API da OpenAI.
@@ -58,6 +71,9 @@ const LEDGER_TYPE_BY_TOOL: Record<string, string> = {
   simulate_marketplace_gig: "income",
   simulate_prediction_market_bet: "income",
   spend_fictional_balance: "expense",
+  check_brokerage_account: "balance_check",
+  get_market_quote: "thought",
+  place_market_order: "trade",
   stop: "stop",
 };
 

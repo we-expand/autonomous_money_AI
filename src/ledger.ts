@@ -17,6 +17,7 @@ export type LedgerEntry = {
     | "transaction"
     | "income"
     | "expense"
+    | "trade"
     | "stop";
   detail: string;
   txHash?: string;

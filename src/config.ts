@@ -30,6 +30,17 @@ export const config = {
   continuousMode: process.env.CONTINUOUS_MODE === "true",
   cycleDelaySeconds: Number(process.env.CYCLE_DELAY_SECONDS ?? 30),
   maxCycles: Number(process.env.MAX_CYCLES ?? 100),
+  // Trading real/paper via Alpaca. Tudo opcional - so exigido se
+  // ENABLE_TRADING=true (o agente so ganha as ferramentas de trading
+  // quando isso esta ligado).
+  tradingEnabled: process.env.ENABLE_TRADING === "true",
+  alpacaApiKey: process.env.ALPACA_API_KEY ?? "",
+  alpacaSecretKey: process.env.ALPACA_SECRET_KEY ?? "",
+  // PAPER (dinheiro simulado) e o padrao. So vira LIVE (dinheiro real) se
+  // a pessoa explicitamente setar ALPACA_PAPER=false no .env.
+  alpacaPaper: process.env.ALPACA_PAPER !== "false",
+  maxOrderUsd: Number(process.env.MAX_ORDER_USD ?? 1),
+  maxLiveBudgetUsd: Number(process.env.MAX_LIVE_BUDGET_USD ?? 5),
 };
 
 if (!Number.isFinite(config.maxIterations) || config.maxIterations <= 0) {
@@ -55,4 +66,27 @@ if (config.maxCycles > 1000) {
   // Trava dura contra loop continuo sem fim: 1000 ciclos ja e um teto
   // generoso pra um experimento educacional.
   throw new Error("MAX_CYCLES acima do teto permitido (1000).");
+}
+if (config.tradingEnabled) {
+  if (!config.alpacaApiKey || !config.alpacaSecretKey) {
+    throw new Error(
+      "ENABLE_TRADING=true mas ALPACA_API_KEY/ALPACA_SECRET_KEY nao estao preenchidos no .env."
+    );
+  }
+  if (!Number.isFinite(config.maxOrderUsd) || config.maxOrderUsd <= 0) {
+    throw new Error("MAX_ORDER_USD precisa ser um numero positivo.");
+  }
+  if (!Number.isFinite(config.maxLiveBudgetUsd) || config.maxLiveBudgetUsd <= 0) {
+    throw new Error("MAX_LIVE_BUDGET_USD precisa ser um numero positivo.");
+  }
+  if (config.maxLiveBudgetUsd > 5) {
+    // Trava dura: o orcamento combinado pra este experimento e US$5. Nenhuma
+    // variavel de ambiente consegue ultrapassar isso em modo LIVE.
+    throw new Error(
+      "MAX_LIVE_BUDGET_USD acima do teto combinado para este experimento (US$5)."
+    );
+  }
+  if (config.maxOrderUsd > config.maxLiveBudgetUsd) {
+    throw new Error("MAX_ORDER_USD nao pode ser maior que MAX_LIVE_BUDGET_USD.");
+  }
 }

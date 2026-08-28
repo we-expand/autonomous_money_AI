@@ -3,13 +3,14 @@ import type { OpenAI } from "openai";
 import { account, publicClient, walletClient, getBalanceEth } from "./wallet.js";
 import { config } from "./config.js";
 import { applyEconomyChange, getBalanceUsd } from "./economy.js";
+import { getAccount, getQuote, placeMarketOrder } from "./broker.js";
 
 // Simula um resultado com probabilidade `successChance` (0-1) de sucesso.
 function rollSuccess(successChance: number): boolean {
   return Math.random() < successChance;
 }
 
-export const toolDefinitions: OpenAI.Chat.ChatCompletionTool[] = [
+const baseToolDefinitions: OpenAI.Chat.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
@@ -169,6 +170,56 @@ export const toolDefinitions: OpenAI.Chat.ChatCompletionTool[] = [
   },
 ];
 
+const tradingToolDefinitions: OpenAI.Chat.ChatCompletionTool[] = [
+  {
+    type: "function",
+    function: {
+      name: "check_brokerage_account",
+      description:
+        `Consulta o saldo REAL da conta de corretora (Alpaca, modo ${config.alpacaPaper ? "PAPER - dinheiro simulado" : "LIVE - DINHEIRO REAL"}). ` +
+        "Mostra caixa disponivel, valor total da carteira e poder de compra.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_market_quote",
+      description: "Consulta a cotacao mais recente (compra/venda) de um ativo real (ex: AAPL, TSLA, SPY) na bolsa americana.",
+      parameters: {
+        type: "object",
+        properties: {
+          symbol: { type: "string", description: "Ticker do ativo (ex: 'AAPL')." },
+        },
+        required: ["symbol"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "place_market_order",
+      description:
+        `Executa uma ordem de mercado REAL (modo ${config.alpacaPaper ? "PAPER - dinheiro simulado" : "LIVE - GASTA DINHEIRO REAL"}) ` +
+        `de compra ou venda por valor em dolares. Teto por ordem: $${config.maxOrderUsd}.`,
+      parameters: {
+        type: "object",
+        properties: {
+          symbol: { type: "string", description: "Ticker do ativo (ex: 'AAPL')." },
+          side: { type: "string", enum: ["buy", "sell"], description: "Comprar ou vender." },
+          notional_usd: { type: "number", description: `Valor em dolares da ordem (maximo $${config.maxOrderUsd}).` },
+          reasoning: { type: "string", description: "Por que esta decisao de compra/venda faz sentido agora." },
+        },
+        required: ["symbol", "side", "notional_usd", "reasoning"],
+      },
+    },
+  },
+];
+
+export const toolDefinitions: OpenAI.Chat.ChatCompletionTool[] = config.tradingEnabled
+  ? [...baseToolDefinitions, ...tradingToolDefinitions]
+  : baseToolDefinitions;
+
 export async function executeTool(name: string, input: Record<string, unknown>, cycle: number) {
   switch (name) {
     case "check_fictional_balance": {
@@ -258,6 +309,31 @@ export async function executeTool(name: string, input: Record<string, unknown>, 
         detail: `Gasto: ${input.reason}`,
       });
       return { spent_usd: amount, balance_usd: entry.balance_after, moeda: "USD FICTICIO" };
+    }
+
+    case "check_brokerage_account": {
+      return await getAccount();
+    }
+
+    case "get_market_quote": {
+      const symbol = String(input.symbol || "").toUpperCase();
+      if (!symbol) return { error: "symbol invalido." };
+      return await getQuote(symbol);
+    }
+
+    case "place_market_order": {
+      const symbol = String(input.symbol || "").toUpperCase();
+      const side = input.side as string;
+      const notional = Number(input.notional_usd);
+      if (!symbol) return { error: "symbol invalido." };
+      if (side !== "buy" && side !== "sell") return { error: "side precisa ser 'buy' ou 'sell'." };
+      if (!Number.isFinite(notional) || notional <= 0) return { error: "notional_usd invalido." };
+      if (notional > config.maxOrderUsd) {
+        return {
+          error: `Valor pedido ($${notional}) excede o teto de seguranca por ordem ($${config.maxOrderUsd}). Ordem bloqueada.`,
+        };
+      }
+      return await placeMarketOrder(symbol, side, notional);
     }
 
     case "check_balance": {
