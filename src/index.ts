@@ -24,7 +24,19 @@ async function runContinuous() {
 
   for (let cycle = 1; cycle <= config.maxCycles; cycle++) {
     console.log(`\n========== CICLO ${cycle}/${config.maxCycles} ==========`);
-    const calledStop = await runAgent(cycle);
+
+    let calledStop = false;
+    try {
+      calledStop = await runAgent(cycle);
+    } catch (err) {
+      // Um erro nao recuperavel num ciclo (ex: rate limit persistente,
+      // API fora do ar) nao deve derrubar o modo continuo inteiro - loga,
+      // espera, e tenta o proximo ciclo.
+      console.error(`\nErro no ciclo ${cycle}:`, err instanceof Error ? err.message : err);
+      console.log(`Aguardando ${config.cycleDelaySeconds}s antes de tentar o proximo ciclo...`);
+      await sleep(config.cycleDelaySeconds * 1000);
+      continue;
+    }
 
     const ethBalance = Number(await getBalanceEth());
     const usdBalance = getBalanceUsd();

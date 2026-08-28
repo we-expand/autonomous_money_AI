@@ -1,5 +1,9 @@
-import OpenAI from "openai";
-import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import OpenAI, { APIError } from "openai";
+import type {
+  ChatCompletion,
+  ChatCompletionCreateParamsNonStreaming,
+  ChatCompletionMessageParam,
+} from "openai/resources/chat/completions";
 import { config } from "./config.js";
 import { toolDefinitions, executeTool } from "./tools.js";
 import { appendLedger } from "./ledger.js";
@@ -63,6 +67,37 @@ const client = new OpenAI({
   baseURL: "https://api.groq.com/openai/v1",
 });
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// O free tier do Groq tem um limite baixo de tokens por minuto (TPM). Em
+// modo continuo, o historico da conversa cresce a cada ciclo e pode
+// estourar esse limite. Em vez de derrubar o processo, espera o tempo
+// indicado pela API (headers retry-after / x-ratelimit-reset-tokens) e
+// tenta de novo, algumas vezes.
+async function createChatCompletionWithRetry(
+  params: ChatCompletionCreateParamsNonStreaming,
+  maxAttempts = 5
+): Promise<ChatCompletion> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await client.chat.completions.create(params);
+    } catch (err) {
+      const isRateLimit = err instanceof APIError && err.status === 429;
+      if (!isRateLimit || attempt === maxAttempts) throw err;
+
+      const retryAfterHeader = err.headers?.get("retry-after");
+      const waitSeconds = retryAfterHeader ? Number(retryAfterHeader) : 10;
+      console.log(
+        `  (rate limit do Groq, tentativa ${attempt}/${maxAttempts} - aguardando ${waitSeconds}s antes de tentar de novo)`
+      );
+      await sleep(waitSeconds * 1000);
+    }
+  }
+  throw new Error("Nao deveria chegar aqui.");
+}
+
 const LEDGER_TYPE_BY_TOOL: Record<string, string> = {
   check_balance: "balance_check",
   check_fictional_balance: "balance_check",
@@ -98,7 +133,7 @@ export async function runAgent(cycle: number): Promise<boolean> {
   let calledStop = false;
 
   for (let iteration = 1; iteration <= config.maxIterations; iteration++) {
-    const response = await client.chat.completions.create({
+    const response = await createChatCompletionWithRetry({
       model: config.groqModel,
       max_tokens: 1024,
       tools: toolDefinitions,
