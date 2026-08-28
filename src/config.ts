@@ -19,7 +19,7 @@ export const config = {
   // NVIDIA API Catalog (build.nvidia.com) - endpoint compativel com OpenAI,
   // free tier sem cartao de credito.
   nvidiaApiKey: requireEnv("NVIDIA_API_KEY"),
-  nvidiaModel: process.env.NVIDIA_MODEL || "meta/llama-3.1-70b-instruct",
+  nvidiaModel: process.env.NVIDIA_MODEL || "openai/gpt-oss-120b",
   agentPrivateKey: requireEnv("AGENT_PRIVATE_KEY") as `0x${string}`,
   rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || undefined,
   maxIterations: Number(process.env.MAX_ITERATIONS ?? 15),

@@ -58,7 +58,15 @@ Preencha o resto do `.env` (copie de `.env.example` se ainda não existir):
 
 ```
 NVIDIA_API_KEY=nvapi-...
-NVIDIA_MODEL=meta/llama-3.1-70b-instruct
+NVIDIA_MODEL=openai/gpt-oss-120b
+```
+
+O catálogo de modelos da NVIDIA muda com frequência (modelos saem de linha e
+retornam erro 410). Para ver a lista atual:
+
+```bash
+curl -s https://integrate.api.nvidia.com/v1/models \
+  -H "Authorization: Bearer $NVIDIA_API_KEY" | python3 -m json.tool | grep '"id"'
 ```
 
 E rode:
