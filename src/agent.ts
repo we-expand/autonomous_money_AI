@@ -69,7 +69,10 @@ export async function runAgent() {
 
     for (const call of toolCalls) {
       if (call.type !== "function") continue;
-      const name = call.function.name;
+      // O gpt-oss as vezes vaza tokens internos de formatacao (ex:
+      // "check_balance<|channel|>commentary") grudados no nome da tool.
+      // Corta tudo a partir do primeiro caractere invalido em nome de tool.
+      const name = call.function.name.split(/[<|]/)[0];
       let input: Record<string, unknown> = {};
       try {
         input = JSON.parse(call.function.arguments || "{}");
