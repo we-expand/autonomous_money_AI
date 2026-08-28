@@ -2,7 +2,8 @@
 
 > Este arquivo existe pra você (ou uma sessão futura do Claude) retomar o
 > projeto sem precisar reconstruir o raciocínio do zero. Última atualização:
-> 28/08/2026, no fim de uma sessão longa de setup + primeiros testes reais.
+> 28/08/2026, depois de migrar o provedor de LLM pra NVIDIA
+> (`openai/gpt-oss-120b`) e confirmar o modo contínuo rodando de novo.
 
 ## De onde isso veio
 
@@ -55,9 +56,12 @@ apostas) — não prova capacidade de ganhar dinheiro real. O trading real
 (dinheiro simulado, preços reais).
 
 O modo contínuo estava rodando (`CONTINUOUS_MODE=true`, até 30 ciclos) e
-travou uma vez por rate limit do Groq — **já corrigido** (ver seção de
-problemas resolvidos). Última ação: você rodou `git pull && npm start` de
-novo depois da correção; aguardando ver o resultado dessa rodada.
+travou por rate limit do Groq. Migramos o provedor de LLM pra **NVIDIA**
+(`LLM_PROVIDER=nvidia`, modelo `openai/gpt-oss-120b` — ver "Problemas
+resolvidos" pra detalhes dos dois bugs no caminho: `err.headers?.get`
+quebrado e modelo padrão inicial inexistente no catálogo). Confirmado
+**funcionando**: última atualização de saldo reportada foi **$17 USD
+fictício**, ciclos rodando sem erro.
 
 ## Como rodar (resumo rápido)
 
@@ -71,12 +75,13 @@ npm run ledger      # log bruto de tudo (on-chain + ficticio + trading)
 
 ## `.env` atual (o que já está configurado)
 
-- `LLM_PROVIDER=nvidia` (novo padrão) com `NVIDIA_API_KEY` — precisa ser
-  preenchido/testado na sua máquina; ainda não confirmamos se o 403 antigo
-  do NVIDIA API Catalog não volta a acontecer com a conta atual. Se der
-  problema, é só trocar `LLM_PROVIDER=groq` (já tem `GROQ_API_KEY`
-  funcionando, mas a cota diária free tier se esgota rápido em modo
-  contínuo — ver "Problemas resolvidos").
+- `LLM_PROVIDER=nvidia` com `NVIDIA_API_KEY` — **confirmado funcionando**
+  (o 403 antigo do NVIDIA API Catalog não voltou a acontecer). Modelo:
+  `openai/gpt-oss-120b` (padrão do código, não precisa `LLM_MODEL` no
+  `.env`). Se algum dia der problema de novo, é só trocar
+  `LLM_PROVIDER=groq` (já tem `GROQ_API_KEY` funcionando, mas a cota
+  diária free tier se esgota rápido em modo contínuo — ver "Problemas
+  resolvidos").
 - `AGENT_PRIVATE_KEY` — carteira testnet já gerada e com saldo (endereço
   `0x5F503402B8F275e54075a93799a1DBB6766B380f`).
 - `CONTINUOUS_MODE=true`, `CYCLE_DELAY_SECONDS=30`, `MAX_CYCLES=30`.
