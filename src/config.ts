@@ -24,6 +24,12 @@ export const config = {
   rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || undefined,
   maxIterations: Number(process.env.MAX_ITERATIONS ?? 15),
   maxTxValueEth: Number(process.env.MAX_TX_VALUE_ETH ?? 0.0002),
+  // Modo continuo: roda varios ciclos de decisao em sequencia, ate atingir
+  // maxCycles ou uma condicao de parada (sem saldo em nenhuma das duas
+  // "moedas" por rodadas consecutivas).
+  continuousMode: process.env.CONTINUOUS_MODE === "true",
+  cycleDelaySeconds: Number(process.env.CYCLE_DELAY_SECONDS ?? 30),
+  maxCycles: Number(process.env.MAX_CYCLES ?? 100),
 };
 
 if (!Number.isFinite(config.maxIterations) || config.maxIterations <= 0) {
@@ -38,4 +44,15 @@ if (config.maxTxValueEth > 0.01) {
   throw new Error(
     "MAX_TX_VALUE_ETH acima do teto permitido (0.01). Isso e testnet, nao precisa de mais que isso."
   );
+}
+if (!Number.isFinite(config.cycleDelaySeconds) || config.cycleDelaySeconds < 5) {
+  throw new Error("CYCLE_DELAY_SECONDS precisa ser um numero >= 5.");
+}
+if (!Number.isFinite(config.maxCycles) || config.maxCycles <= 0) {
+  throw new Error("MAX_CYCLES precisa ser um numero positivo.");
+}
+if (config.maxCycles > 1000) {
+  // Trava dura contra loop continuo sem fim: 1000 ciclos ja e um teto
+  // generoso pra um experimento educacional.
+  throw new Error("MAX_CYCLES acima do teto permitido (1000).");
 }

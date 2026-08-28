@@ -2,12 +2,13 @@
   "name": "autonomous-money-ai",
   "version": "0.1.0",
   "private": true,
-  "description": "Sandbox educacional: agente autonomo com carteira em testnet (Base Sepolia) e loop de decisao via IA gratuita (NVIDIA API Catalog). Sem dinheiro real.",
+  "description": "Sandbox educacional: agente autonomo com carteira em testnet (Base Sepolia), economia ficticia simulada e loop de decisao via IA gratuita (Groq). Sem dinheiro real.",
   "type": "module",
   "scripts": {
     "setup-wallet": "tsx scripts/setup-wallet.ts",
     "start": "tsx src/index.ts",
-    "ledger": "tsx scripts/print-ledger.ts"
+    "ledger": "tsx scripts/print-ledger.ts",
+    "economy": "tsx scripts/print-economy.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

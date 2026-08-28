@@ -8,8 +8,16 @@ const LEDGER_FILE = join(LEDGER_DIR, "actions.json");
 
 export type LedgerEntry = {
   timestamp: string;
+  cycle: number;
   iteration: number;
-  type: "thought" | "balance_check" | "faucet_request" | "transaction" | "stop";
+  type:
+    | "thought"
+    | "balance_check"
+    | "faucet_request"
+    | "transaction"
+    | "income"
+    | "expense"
+    | "stop";
   detail: string;
   txHash?: string;
 };

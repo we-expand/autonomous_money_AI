@@ -11,18 +11,56 @@ fundos e mandar transações — dentro de limites de segurança fixos no códig
 
 ## O que ele faz
 
-O agente roda em loop (`src/agent.ts`), com um "genesis prompt" que o instrui a:
+O agente roda em ciclos (`src/agent.ts`), com um "genesis prompt" que o instrui a, em cada ciclo:
 
-1. Checar o próprio saldo (`check_balance`).
-2. Se estiver zerado, pedir instruções de faucet (`request_faucet_info`) —
-   e reconhecer no log que ele **não consegue se autofinanciar sozinho**
-   (a maioria dos faucets exige humano/captcha — isso é proposital).
-3. Se tiver saldo, executar 1-2 transações de teste (`send_test_transaction`).
-4. Registrar seus raciocínios (`log_thought`).
-5. Parar (`stop`) quando concluir a tarefa.
+1. Checar o saldo de ETH de testnet (`check_balance`) e o saldo de **USD
+   fictício** (`check_fictional_balance`) — duas "moedas" totalmente
+   separadas, explicado abaixo.
+2. Se o ETH de testnet estiver zerado, pedir instruções de faucet
+   (`request_faucet_info`) — e reconhecer no log que ele **não consegue se
+   autofinanciar sozinho** (a maioria dos faucets exige humano/captcha —
+   isso é proposital).
+3. Tentar gerar renda fictícia com `simulate_content_job`,
+   `simulate_marketplace_gig` ou `simulate_prediction_market_bet` —
+   cada uma com chance de sucesso/fracasso, simulando decisões de
+   risco x retorno.
+4. Se tiver ETH de testnet, executar uma transação de teste
+   (`send_test_transaction`) pra demonstrar capacidade on-chain.
+5. Registrar seus raciocínios (`log_thought`), inclusive o porquê de cada
+   decisão econômica.
+6. Parar o ciclo (`stop`) quando concluir a tarefa.
 
-Toda ação é gravada em `ledger/actions.json`, incluindo os hashes das
-transações (visíveis no [Base Sepolia explorer](https://sepolia.basescan.org)).
+Toda ação é gravada em `ledger/actions.json` (incluindo hashes de transação,
+visíveis no [Base Sepolia explorer](https://sepolia.basescan.org)), e toda
+movimentação da economia fictícia em `ledger/economy.json`.
+
+### Duas "moedas", propositalmente separadas
+
+- **ETH de testnet**: real, on-chain, mas sem valor nenhum — só serve pra
+  provar que o agente consegue assinar e executar transações sozinho. Não
+  tem como crescer (não há staking/renda), só diminui com cada transação.
+- **USD fictício**: um saldo 100% simulado, local (não é blockchain, não é
+  dinheiro real), que o agente ganha ou perde completando tarefas
+  simuladas. Serve pra observar COMO um agente autônomo tomaria decisões
+  de geração de renda — não prova que ele conseguiria ganhar dinheiro de
+  verdade, já que não existe mercado real do outro lado.
+
+### Rodando em ciclos contínuos
+
+Por padrão (`CONTINUOUS_MODE=false`), `npm start` roda **um ciclo** e para.
+Pra deixar ele rodando repetidamente (útil pra ver a economia fictícia
+evoluir ao longo do tempo), ative no `.env`:
+
+```
+CONTINUOUS_MODE=true
+CYCLE_DELAY_SECONDS=30   # pausa entre ciclos
+MAX_CYCLES=100           # teto duro de seguranca (max 1000)
+```
+
+O modo contínuo para sozinho se: atingir `MAX_CYCLES`, ou ficar 3 ciclos
+seguidos sem saldo em nenhuma das duas moedas (ETH de testnet zerado E
+USD fictício zerado — sinal de que não há mais nada útil a fazer).
+`Ctrl+C` interrompe a qualquer momento.
 
 ## Guardrails (de propósito, não é feature — é o ponto do experimento)
 
@@ -66,7 +104,7 @@ Preencha o resto do `.env` (copie de `.env.example` se ainda não existir):
 
 ```
 GROQ_API_KEY=gsk_...
-GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_MODEL=openai/gpt-oss-120b
 ```
 
 Para ver a lista de modelos disponíveis no Groq:
@@ -79,9 +117,29 @@ curl -s https://api.groq.com/openai/v1/models \
 E rode:
 
 ```bash
-npm start          # roda o agente
-npm run ledger      # imprime o histórico de ações registradas
+npm start           # roda o agente (1 ciclo, ou varios se CONTINUOUS_MODE=true)
+npm run ledger      # imprime o historico completo de acoes (on-chain + economia)
+npm run economy     # imprime so o resumo da economia ficticia (saldo, taxa de sucesso por fonte)
 ```
+
+## Monitorando o agente
+
+Três formas de acompanhar, do mais externo/verificável ao mais interno:
+
+1. **Blockchain (Base Sepolia Explorer)** — histórico público e imutável de
+   toda transação real que o agente assinou:
+   ```
+   https://sepolia.basescan.org/address/SEU_ENDERECO_AQUI
+   ```
+2. **`npm run economy`** — resumo da economia fictícia: saldo atual, taxa
+   de sucesso por tipo de tarefa, e o histórico completo de ganhos/perdas
+   simulados, ciclo a ciclo.
+3. **`npm run ledger`** — o raciocínio bruto do agente: cada `log_thought`,
+   cada chamada de ferramenta e seu resultado, na ordem em que aconteceram.
+
+Rodando em `CONTINUOUS_MODE=true`, o próprio terminal já mostra em tempo
+real cada ciclo (`========== CICLO N ==========`) com o resumo de saldo no
+final de cada um — dá pra deixar rodando numa aba e só acompanhar o output.
 
 ## Segurança
 
@@ -91,6 +149,9 @@ npm run ledger      # imprime o histórico de ações registradas
 - Não há integração com exchanges, mercados de previsão ou pagamento a
   fornecedores reais — isso ficou fora de escopo de propósito, dado o risco
   de dar a um LLM controle irrestrito sobre dinheiro de verdade.
+- O "USD fictício" (`ledger/economy.json`) é só um contador local em JSON.
+  Não representa saldo em nenhuma conta, banco ou exchange real — é
+  puramente ilustrativo de como o agente tomaria decisões econômicas.
 
 ## Por que isso existe
 
