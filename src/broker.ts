@@ -65,12 +65,24 @@ export async function getQuote(symbol: string) {
 }
 
 export async function placeMarketOrder(symbol: string, side: "buy" | "sell", notionalUsd: number) {
-  const order = await signedRequest("/api/v3/order", "POST", {
-    symbol,
-    side: side.toUpperCase(),
-    type: "MARKET",
-    quoteOrderQty: notionalUsd.toFixed(2),
-  });
+  let order;
+  try {
+    order = await signedRequest("/api/v3/order", "POST", {
+      symbol,
+      side: side.toUpperCase(),
+      type: "MARKET",
+      quoteOrderQty: notionalUsd.toFixed(2),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes("NOTIONAL")) {
+      throw new Error(
+        `${message} - a Binance tem um valor minimo de ordem por par (geralmente ~$5 USDT), ` +
+          `e $${notionalUsd} ficou abaixo disso para ${symbol}. Tente um valor maior (respeitando o teto MAX_ORDER_USD) ou desista dessa operacao.`
+      );
+    }
+    throw err;
+  }
   return {
     order_id: order.orderId,
     symbol: order.symbol,

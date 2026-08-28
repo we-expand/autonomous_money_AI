@@ -74,7 +74,7 @@ ENABLE_TRADING=true
 BINANCE_API_KEY=...
 BINANCE_SECRET_KEY=...
 BINANCE_TESTNET=true   # true = dinheiro simulado (padrao). false = dinheiro REAL.
-MAX_ORDER_USD=1
+MAX_ORDER_USD=5        # a Binance recusa ordens abaixo do minimo dela (~$5 por par)
 MAX_LIVE_BUDGET_USD=5  # teto rigido, nao pode passar de 5 em modo LIVE
 ```
 
@@ -90,7 +90,14 @@ MAX_LIVE_BUDGET_USD=5  # teto rigido, nao pode passar de 5 em modo LIVE
    que você aceita arriscar, troque `BINANCE_TESTNET=false`.
 3. `MAX_LIVE_BUDGET_USD` tem um teto rígido de $5 embutido no código
    (`src/config.ts`) — nenhuma variável de ambiente consegue passar disso,
-   e `MAX_ORDER_USD` limita quanto ele pode arriscar numa ordem só.
+   e `MAX_ORDER_USD` limita quanto ele pode arriscar numa ordem só. Como a
+   Binance exige um valor mínimo por ordem (~$5), com o orçamento de $5
+   isso na prática significa que **uma única ordem pode usar o orçamento
+   inteiro** — não dá pra fazer várias ordens pequenas com um orçamento
+   tão baixo. Se quiser espalhar o risco em mais operações, precisaria de
+   um orçamento maior (e nesse caso reavalie `MAX_LIVE_BUDGET_USD` com
+   cuidado, já que o teto de $5 foi combinado como o limite deste
+   experimento).
 
 Ferramentas novas disponíveis quando `ENABLE_TRADING=true`:
 `check_brokerage_account`, `get_market_quote`, `place_market_order`

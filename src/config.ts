@@ -39,7 +39,9 @@ export const config = {
   // TESTNET (dinheiro simulado) e o padrao. So vira LIVE (dinheiro real) se
   // a pessoa explicitamente setar BINANCE_TESTNET=false no .env.
   binanceTestnet: process.env.BINANCE_TESTNET !== "false",
-  maxOrderUsd: Number(process.env.MAX_ORDER_USD ?? 1),
+  // 5 e o valor minimo tipico de ordem na Binance (varia por par) - abaixo
+  // disso, quase toda ordem e recusada com "Filter failure: NOTIONAL".
+  maxOrderUsd: Number(process.env.MAX_ORDER_USD ?? 5),
   maxLiveBudgetUsd: Number(process.env.MAX_LIVE_BUDGET_USD ?? 5),
 };
 
