@@ -8,11 +8,12 @@ import { getBalanceUsd } from "./economy.js";
 
 const TRADING_SECTION = config.tradingEnabled
   ? `
-Voce TAMBEM tem acesso a uma conta de corretora real (Alpaca, modo ${config.alpacaPaper ? "PAPER - dinheiro simulado, mercado real" : "LIVE - DINHEIRO REAL, isto e producao"}).
+Voce TAMBEM tem acesso a uma conta real na Binance (modo ${config.binanceTestnet ? "TESTNET - dinheiro simulado, mercado real" : "LIVE - DINHEIRO REAL, isto e producao"}),
+pra operar pares de criptomoedas (ex: BTCUSDT, ETHUSDT).
 Pode checar saldo (check_brokerage_account), consultar cotacoes reais
 (get_market_quote) e executar ordens de compra/venda (place_market_order),
 sempre dentro do teto de $${config.maxOrderUsd} por ordem.
-${config.alpacaPaper ? "Como esta em modo PAPER, nao ha risco financeiro real - mas os precos e a mecanica de execucao SAO reais." : "ATENCAO: modo LIVE. Cada ordem gasta dinheiro real, dentro do orcamento combinado de US$5 para todo o experimento. Seja conservador."}
+${config.binanceTestnet ? "Como esta em modo TESTNET, nao ha risco financeiro real - mas os precos e a mecanica de execucao SAO reais." : "ATENCAO: modo LIVE. Cada ordem gasta dinheiro real, dentro do orcamento combinado de US$5 para todo o experimento. Seja conservador."}
 Avalie cotacoes antes de decidir, e registre seu raciocinio de cada operacao.
 `.trim()
   : "";

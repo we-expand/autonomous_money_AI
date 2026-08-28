@@ -30,15 +30,15 @@ export const config = {
   continuousMode: process.env.CONTINUOUS_MODE === "true",
   cycleDelaySeconds: Number(process.env.CYCLE_DELAY_SECONDS ?? 30),
   maxCycles: Number(process.env.MAX_CYCLES ?? 100),
-  // Trading real/paper via Alpaca. Tudo opcional - so exigido se
+  // Trading real/testnet via Binance. Tudo opcional - so exigido se
   // ENABLE_TRADING=true (o agente so ganha as ferramentas de trading
   // quando isso esta ligado).
   tradingEnabled: process.env.ENABLE_TRADING === "true",
-  alpacaApiKey: process.env.ALPACA_API_KEY ?? "",
-  alpacaSecretKey: process.env.ALPACA_SECRET_KEY ?? "",
-  // PAPER (dinheiro simulado) e o padrao. So vira LIVE (dinheiro real) se
-  // a pessoa explicitamente setar ALPACA_PAPER=false no .env.
-  alpacaPaper: process.env.ALPACA_PAPER !== "false",
+  binanceApiKey: process.env.BINANCE_API_KEY ?? "",
+  binanceSecretKey: process.env.BINANCE_SECRET_KEY ?? "",
+  // TESTNET (dinheiro simulado) e o padrao. So vira LIVE (dinheiro real) se
+  // a pessoa explicitamente setar BINANCE_TESTNET=false no .env.
+  binanceTestnet: process.env.BINANCE_TESTNET !== "false",
   maxOrderUsd: Number(process.env.MAX_ORDER_USD ?? 1),
   maxLiveBudgetUsd: Number(process.env.MAX_LIVE_BUDGET_USD ?? 5),
 };
@@ -68,9 +68,9 @@ if (config.maxCycles > 1000) {
   throw new Error("MAX_CYCLES acima do teto permitido (1000).");
 }
 if (config.tradingEnabled) {
-  if (!config.alpacaApiKey || !config.alpacaSecretKey) {
+  if (!config.binanceApiKey || !config.binanceSecretKey) {
     throw new Error(
-      "ENABLE_TRADING=true mas ALPACA_API_KEY/ALPACA_SECRET_KEY nao estao preenchidos no .env."
+      "ENABLE_TRADING=true mas BINANCE_API_KEY/BINANCE_SECRET_KEY nao estao preenchidos no .env."
     );
   }
   if (!Number.isFinite(config.maxOrderUsd) || config.maxOrderUsd <= 0) {

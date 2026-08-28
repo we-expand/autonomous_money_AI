@@ -62,40 +62,45 @@ seguidos sem saldo em nenhuma das duas moedas (ETH de testnet zerado E
 USD fictício zerado — sinal de que não há mais nada útil a fazer).
 `Ctrl+C` interrompe a qualquer momento.
 
-## Trading real/paper (opcional, via Alpaca)
+## Trading real/testnet (opcional, via Binance)
 
 Além da economia fictícia, dá pra ligar operações reais contra o mercado de
-verdade (ações americanas), via [Alpaca](https://alpaca.markets):
+verdade (criptomoedas), via [Binance](https://binance.com) (escolhida por
+aceitar contas do Brasil — a Alpaca, alternativa inicial, não aceita
+residência fiscal brasileira em conta individual):
 
 ```
 ENABLE_TRADING=true
-ALPACA_API_KEY=...
-ALPACA_SECRET_KEY=...
-ALPACA_PAPER=true      # true = dinheiro simulado (padrao). false = dinheiro REAL.
+BINANCE_API_KEY=...
+BINANCE_SECRET_KEY=...
+BINANCE_TESTNET=true   # true = dinheiro simulado (padrao). false = dinheiro REAL.
 MAX_ORDER_USD=1
 MAX_LIVE_BUDGET_USD=5  # teto rigido, nao pode passar de 5 em modo LIVE
 ```
 
-1. Crie uma conta grátis em https://alpaca.markets e gere as chaves de
-   **paper trading** primeiro (aba API Keys do dashboard paper) — teste
-   tudo assim, sem nenhum risco financeiro (preços e execução são reais,
-   dinheiro é simulado).
+1. Teste primeiro em **testnet** — gere chaves grátis em
+   https://testnet.binance.vision (login com GitHub, é uma conta separada
+   da sua conta real da Binance). Preços e mecânica de execução são reais,
+   saldo é simulado, sem nenhum risco financeiro.
 2. Só depois que validar que está tudo funcionando, se quiser ir pra
-   dinheiro real: gere chaves de conta **live**, deposite os $5 que você
-   está disposto a arriscar, troque `ALPACA_PAPER=false` e use as chaves
-   live no lugar das de paper.
+   dinheiro real: na sua conta real da Binance, vá em **API Management**,
+   crie uma chave nova com permissão de **"Enable Spot & Margin Trading"**
+   e **SEM** permissão de saque (withdraw) — assim, mesmo que a chave
+   vaze, ninguém consegue sacar seus fundos, só operar. Deposite os $5
+   que você aceita arriscar, troque `BINANCE_TESTNET=false`.
 3. `MAX_LIVE_BUDGET_USD` tem um teto rígido de $5 embutido no código
    (`src/config.ts`) — nenhuma variável de ambiente consegue passar disso,
    e `MAX_ORDER_USD` limita quanto ele pode arriscar numa ordem só.
 
 Ferramentas novas disponíveis quando `ENABLE_TRADING=true`:
-`check_brokerage_account`, `get_market_quote`, `place_market_order`.
+`check_brokerage_account`, `get_market_quote`, `place_market_order`
+(pares tipo `BTCUSDT`, `ETHUSDT`).
 
 ⚠️ Em modo LIVE isso gasta dinheiro real. O agente pode tomar decisões
 ruins, o mercado pode virar contra ele, e não há garantia nenhuma de
 lucro — é exatamente o ponto de testar "ele consegue ganhar dinheiro de
-verdade sozinho?". Só ligue `ALPACA_PAPER=false` com o valor que você
-aceita perder por completo.
+verdade sozinho?". Só ligue `BINANCE_TESTNET=false` com o valor que você
+aceita perder por completo, e nunca dê permissão de saque à chave de API.
 
 ## Guardrails (de propósito, não é feature — é o ponto do experimento)
 
@@ -174,9 +179,9 @@ Três formas de acompanhar, do mais externo/verificável ao mais interno:
    simulados, ciclo a ciclo.
 3. **`npm run ledger`** — o raciocínio bruto do agente: cada `log_thought`,
    cada chamada de ferramenta e seu resultado, na ordem em que aconteceram.
-4. **Dashboard da Alpaca** (se `ENABLE_TRADING=true`) — saldo, posições e
-   histórico de ordens reais em https://app.alpaca.markets (troque
-   `/paper/` por `/live/` na URL conforme o modo).
+4. **Dashboard da Binance** (se `ENABLE_TRADING=true`) — saldo, posições e
+   histórico de ordens reais em https://testnet.binance.vision (modo
+   testnet) ou https://www.binance.com (modo live).
 
 Rodando em `CONTINUOUS_MODE=true`, o próprio terminal já mostra em tempo
 real cada ciclo (`========== CICLO N ==========`) com o resumo de saldo no

@@ -176,8 +176,8 @@ const tradingToolDefinitions: OpenAI.Chat.ChatCompletionTool[] = [
     function: {
       name: "check_brokerage_account",
       description:
-        `Consulta o saldo REAL da conta de corretora (Alpaca, modo ${config.alpacaPaper ? "PAPER - dinheiro simulado" : "LIVE - DINHEIRO REAL"}). ` +
-        "Mostra caixa disponivel, valor total da carteira e poder de compra.",
+        `Consulta o saldo REAL da conta na Binance (modo ${config.binanceTestnet ? "TESTNET - dinheiro simulado" : "LIVE - DINHEIRO REAL"}). ` +
+        "Mostra saldo livre em USDT e outros ativos com saldo > 0.",
       parameters: { type: "object", properties: {} },
     },
   },
@@ -185,11 +185,11 @@ const tradingToolDefinitions: OpenAI.Chat.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "get_market_quote",
-      description: "Consulta a cotacao mais recente (compra/venda) de um ativo real (ex: AAPL, TSLA, SPY) na bolsa americana.",
+      description: "Consulta o preco mais recente de um par de criptomoedas real na Binance (ex: BTCUSDT, ETHUSDT).",
       parameters: {
         type: "object",
         properties: {
-          symbol: { type: "string", description: "Ticker do ativo (ex: 'AAPL')." },
+          symbol: { type: "string", description: "Par de trading (ex: 'BTCUSDT', 'ETHUSDT'). Sempre cotado contra USDT." },
         },
         required: ["symbol"],
       },
@@ -200,14 +200,14 @@ const tradingToolDefinitions: OpenAI.Chat.ChatCompletionTool[] = [
     function: {
       name: "place_market_order",
       description:
-        `Executa uma ordem de mercado REAL (modo ${config.alpacaPaper ? "PAPER - dinheiro simulado" : "LIVE - GASTA DINHEIRO REAL"}) ` +
-        `de compra ou venda por valor em dolares. Teto por ordem: $${config.maxOrderUsd}.`,
+        `Executa uma ordem de mercado REAL na Binance (modo ${config.binanceTestnet ? "TESTNET - dinheiro simulado" : "LIVE - GASTA DINHEIRO REAL"}) ` +
+        `de compra ou venda por valor em dolares (USDT). Teto por ordem: $${config.maxOrderUsd}.`,
       parameters: {
         type: "object",
         properties: {
-          symbol: { type: "string", description: "Ticker do ativo (ex: 'AAPL')." },
+          symbol: { type: "string", description: "Par de trading (ex: 'BTCUSDT', 'ETHUSDT')." },
           side: { type: "string", enum: ["buy", "sell"], description: "Comprar ou vender." },
-          notional_usd: { type: "number", description: `Valor em dolares da ordem (maximo $${config.maxOrderUsd}).` },
+          notional_usd: { type: "number", description: `Valor em dolares (USDT) da ordem (maximo $${config.maxOrderUsd}).` },
           reasoning: { type: "string", description: "Por que esta decisao de compra/venda faz sentido agora." },
         },
         required: ["symbol", "side", "notional_usd", "reasoning"],
